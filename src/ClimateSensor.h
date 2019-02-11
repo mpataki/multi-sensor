@@ -1,6 +1,6 @@
 #ifndef ClimateSensor_h
 #define ClimateSensor_h
-#define DHTPIN 0       // Pin which is connected to the DHT sensor.
+#define DHTPIN 0       // Pin which is connected to the DHT sensor. // TODO: this should be passed as a variable to this class
 #define DHTTYPE DHT22  // AM2302
 
 #include <DHT.h>

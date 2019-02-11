@@ -1,6 +1,8 @@
 #include <PubSubClient.h>
 #include "Configurator.h"
 #include "ClimateSensor.h"
+#include "LightSensor.h"
+#include "MotionSensor.h"
 
 #define MQTT_SERVER "mqtt_server"
 #define MQTT_PORT "mqtt_port"
@@ -9,8 +11,12 @@
 #define MQTT_PASSWORD "mqtt_password"
 #define MQTT_TOPIC "mqtt_topic"
 #define CORE_LOOP_DELAY "core_loop_delay"
+#define LIGHT_SENSOR_PIN A0
+#define MOTION_SENSOR_PIN 4
 
 ClimateSensor climateSensor;
+LightSensor lightSensor(LIGHT_SENSOR_PIN);
+MotionSensor motionSensor(MOTION_SENSOR_PIN);
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
@@ -22,6 +28,8 @@ void sendStateUpdate() {
   JsonObject& root = jsonBuffer.createObject();
   root["temperature"] = climateSensor.getTemperature();
   root["humidity"] = climateSensor.getHumidity();
+  root["light"] = lightSensor.getLightReading();
+  root["motion"] = motionSensor.getSensorValue();
 
   char payload[256];
   root.printTo(payload, sizeof(payload));
@@ -82,6 +90,8 @@ void setup()
 
   Configurator::Instance()->setup(configButton);
   climateSensor.setup();
+  lightSensor.setup();
+  motionSensor.setup();
 
   const char* mqttServerAddress = Configurator::Instance()->getConfigValue(MQTT_SERVER);
   const char* mqttServerPort = Configurator::Instance()->getConfigValue(MQTT_PORT);
