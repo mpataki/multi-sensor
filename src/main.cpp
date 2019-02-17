@@ -11,16 +11,16 @@
 #define MQTT_PASSWORD "mqtt_password"
 #define MQTT_TOPIC "mqtt_topic"
 #define CORE_LOOP_DELAY "core_loop_delay"
+#define CLIMATE_SENSOR_PIN 5
 #define LIGHT_SENSOR_PIN A0
-#define MOTION_SENSOR_PIN 4
+#define MOTION_SENSOR_PIN 15
+#define CONFIG_RESET_PIN 0
 
-ClimateSensor climateSensor;
+ClimateSensor climateSensor(CLIMATE_SENSOR_PIN);
 LightSensor lightSensor(LIGHT_SENSOR_PIN);
 MotionSensor motionSensor(MOTION_SENSOR_PIN);
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
-
-int configButton = 0;
 
 void sendStateUpdate() {
   StaticJsonBuffer<256> jsonBuffer;
@@ -79,6 +79,7 @@ void setup()
 
   String defaultClientId = "ESP-" + String(ESP.getChipId());
   String defaultTopic = "climate/ESP-" + String(ESP.getChipId());
+  Serial.println("My name is " + defaultClientId);
 
   Configurator::Instance()->addConfigOption(MQTT_SERVER, "MQTT server", "", 40);
   Configurator::Instance()->addConfigOption(MQTT_PORT, "MQTT port", "1883", 10);
@@ -88,7 +89,7 @@ void setup()
   Configurator::Instance()->addConfigOption(MQTT_TOPIC, "MQTT Topic", defaultTopic.c_str(), 40);
   Configurator::Instance()->addConfigOption(CORE_LOOP_DELAY, "Core Loop Delay", "60000", 6);
 
-  Configurator::Instance()->setup(configButton);
+  Configurator::Instance()->setup(CONFIG_RESET_PIN);
   climateSensor.setup();
   lightSensor.setup();
   motionSensor.setup();

@@ -1,8 +1,8 @@
 
 #include "ClimateSensor.h"
 
-ClimateSensor::ClimateSensor() :
-  dht(DHTPIN, DHTTYPE)
+ClimateSensor::ClimateSensor(uint8_t pin) :
+  dht(pin, DHTTYPE)
 {
   lastHumidity = 0.0f;
   lastTemperature = 0.0f;

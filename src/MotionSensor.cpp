@@ -7,9 +7,13 @@ MotionSensor::MotionSensor(uint8_t pin) {
 MotionSensor::~MotionSensor() {}
 
 void MotionSensor::setup() {
+  Serial.println("Setting motion pin to input: " + String(pin));
   pinMode(pin, INPUT);
 }
 
 bool MotionSensor::getSensorValue() {
-  return digitalRead(pin) == 1;
+  Serial.println("Reading pin " + String(pin));
+  int pinValue = digitalRead(pin);
+  Serial.println("Motion: " + String(pinValue));
+  return pinValue == 1;
 }
