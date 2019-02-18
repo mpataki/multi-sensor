@@ -21,21 +21,47 @@ LightSensor lightSensor(LIGHT_SENSOR_PIN);
 MotionSensor motionSensor(MOTION_SENSOR_PIN);
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
+boolean motionStatus = false;
+unsigned long lastPeriodicSendTime = 0;
 
-void sendStateUpdate() {
+void sendPeriodicUpdate() {
   StaticJsonBuffer<256> jsonBuffer;
 
   JsonObject& root = jsonBuffer.createObject();
   root["temperature"] = climateSensor.getTemperature();
   root["humidity"] = climateSensor.getHumidity();
   root["light"] = lightSensor.getLightReading();
-  root["motion"] = motionSensor.getSensorValue();
 
   char payload[256];
   root.printTo(payload, sizeof(payload));
 
   root.prettyPrintTo(Serial);
   mqttClient.publish(Configurator::Instance()->getConfigValue(MQTT_TOPIC), payload);
+}
+
+void sendMotionUpdate() {
+  boolean curMotionStatus = motionSensor.getSensorValue();
+
+  if (motionStatus == curMotionStatus)
+    return;
+
+  StaticJsonBuffer<128> jsonBuffer;
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["motion"] = curMotionStatus;
+
+  char payload[128];
+  root.printTo(payload, sizeof(payload));
+
+  root.prettyPrintTo(Serial);
+
+  char topic[128];
+  strcpy(topic, Configurator::Instance()->getConfigValue(MQTT_TOPIC));
+  strcat(topic, "/motion");
+
+  mqttClient.publish(topic, payload);
+
+  motionStatus = curMotionStatus;
 }
 
 bool ensureMqttConnected() {
@@ -101,18 +127,33 @@ void setup()
   mqttClient.setServer(mqttServerAddress, atoi(mqttServerPort));
 }
 
+unsigned long getPeriodicInterval() {
+  return max(
+    (uint32_t)atoi(Configurator::Instance()->getConfigValue("core_loop_delay")),
+    climateSensor.getMinSensorScanInterval()
+  );
+}
+
+void periodicUpdate() {
+  unsigned long currentTime = millis();
+
+  if (currentTime - lastPeriodicSendTime < getPeriodicInterval())
+    return;
+
+  sendPeriodicUpdate();
+
+  lastPeriodicSendTime = currentTime;
+}
+
 void loop()
 {
   Configurator::Instance()->loop();
 
   ensureMqttConnected();
+  sendMotionUpdate();
+  periodicUpdate();
 
-  sendStateUpdate();
   mqttClient.loop();
 
-  // should use delay vs some sort of ESP level sleep to reduce power consumption?
-  delay(max(
-    (uint32_t)atoi(Configurator::Instance()->getConfigValue("core_loop_delay")),
-    climateSensor.getMinSensorScanInterval()
-  ));
+  delay(100); // limit loops to 10/sec
 }
