@@ -13,7 +13,7 @@
 #define CORE_LOOP_DELAY "core_loop_delay"
 #define CLIMATE_SENSOR_PIN 5
 #define LIGHT_SENSOR_PIN A0
-#define MOTION_SENSOR_PIN 15
+#define MOTION_SENSOR_PIN 14
 #define CONFIG_RESET_PIN 0
 
 ClimateSensor climateSensor(CLIMATE_SENSOR_PIN);
