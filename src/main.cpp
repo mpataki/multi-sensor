@@ -39,11 +39,12 @@ void sendPeriodicUpdate() {
   mqttClient.publish(Configurator::Instance()->getConfigValue(MQTT_TOPIC), payload);
 }
 
-void sendMotionUpdate() {
+// returns a boolean indicating if a motion change occurred or not
+boolean sendMotionUpdate() {
   boolean curMotionStatus = motionSensor.getSensorValue();
 
   if (motionStatus == curMotionStatus)
-    return;
+    return false;
 
   StaticJsonBuffer<128> jsonBuffer;
 
@@ -62,6 +63,8 @@ void sendMotionUpdate() {
   mqttClient.publish(topic, payload);
 
   motionStatus = curMotionStatus;
+
+  return true;
 }
 
 bool ensureMqttConnected() {
@@ -101,7 +104,7 @@ void setup()
   Serial.begin(9600);
   Serial.println("Starting up module");
 
-  // Configurator::Instance()->reset(); // testing
+  // Configurator::Instance()->reset(); // for testing configurator
 
   String defaultClientId = "ESP-" + String(ESP.getChipId());
   String defaultTopic = "climate/ESP-" + String(ESP.getChipId());
@@ -134,10 +137,11 @@ unsigned long getPeriodicInterval() {
   );
 }
 
-void periodicUpdate() {
+// force param ignores the time constraint, forcing a periodic update immediately
+void periodicUpdate(boolean force) {
   unsigned long currentTime = millis();
 
-  if (currentTime - lastPeriodicSendTime < getPeriodicInterval())
+  if (!force && currentTime - lastPeriodicSendTime < getPeriodicInterval())
     return;
 
   sendPeriodicUpdate();
@@ -150,8 +154,8 @@ void loop()
   Configurator::Instance()->loop();
 
   ensureMqttConnected();
-  sendMotionUpdate();
-  periodicUpdate();
+  boolean didChange = sendMotionUpdate();
+  periodicUpdate(didChange); // force a periodic update on a motion change
 
   mqttClient.loop();
 
