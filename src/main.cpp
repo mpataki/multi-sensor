@@ -35,8 +35,12 @@ void sendPeriodicUpdate() {
   char payload[256];
   root.printTo(payload, sizeof(payload));
 
+  char topic[128];
+  strcpy(topic, "climate/");
+  strcat(topic, Configurator::Instance()->getConfigValue(MQTT_TOPIC));
+
   root.prettyPrintTo(Serial);
-  mqttClient.publish(Configurator::Instance()->getConfigValue(MQTT_TOPIC), payload);
+  mqttClient.publish(topic, payload);
 }
 
 // returns a boolean indicating if a motion change occurred or not
@@ -57,8 +61,8 @@ boolean sendMotionUpdate() {
   root.prettyPrintTo(Serial);
 
   char topic[128];
-  strcpy(topic, Configurator::Instance()->getConfigValue(MQTT_TOPIC));
-  strcat(topic, "/motion");
+  strcpy(topic, "motion/");
+  strcat(topic, Configurator::Instance()->getConfigValue(MQTT_TOPIC));
 
   mqttClient.publish(topic, payload);
 
