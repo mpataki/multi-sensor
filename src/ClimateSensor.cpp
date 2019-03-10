@@ -18,6 +18,8 @@ void ClimateSensor::setup() {
   sensor_t sensor;
   dht.temperature().getSensor(&sensor);
   Serial.println("------------------------------------");
+  Serial.print  ("Min Delay:    "); Serial.print(sensor.min_delay / 1000); Serial.println(" ms");
+  Serial.println("------------------------------------");
   Serial.println("Temperature");
   Serial.print  ("Sensor:       "); Serial.println(sensor.name);
   Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
@@ -29,7 +31,6 @@ void ClimateSensor::setup() {
 
   // Print humidity sensor details.
   dht.humidity().getSensor(&sensor);
-  Serial.println("------------------------------------");
   Serial.println("Humidity");
   Serial.print  ("Sensor:       "); Serial.println(sensor.name);
   Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
