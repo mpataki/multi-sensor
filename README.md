@@ -6,4 +6,10 @@ When starting up for the first time the module will open an access point that yo
 
 To reset your config, hold the flash button. All settings will be cleared and a new access point will be started, ready for re-configuration.
 
-The MQTT base topic is also configured in this way. Periodic status updates will be sent on this topic for the light and climate sensors. The topic `<you-base-topic>/motion` will recieve motion updates as they happen, independent of the periodic updates. 
+The MQTT base topic is also configured in this way. Periodic status updates will be sent on this topic for the light and climate sensors. The topic `<you-base-topic>/motion` will recieve motion updates as they happen, independent of the periodic updates.
+
+## Build & Upload
+
+```
+pio run -t upload; pio device monitor
+```
