@@ -9,7 +9,7 @@
 #define MQTT_CLIENT_ID "mqtt_client_id"
 #define MQTT_USERNAME "mqtt_username"
 #define MQTT_PASSWORD "mqtt_password"
-#define MQTT_TOPIC "mqtt_topic"
+#define DEVICE_NAME "device_name"
 #define CORE_LOOP_DELAY "core_loop_delay"
 #define CLIMATE_SENSOR_PIN 5
 #define LIGHT_SENSOR_PIN A0
@@ -25,21 +25,20 @@ boolean motionStatus = false;
 unsigned long lastPeriodicSendTime = 0;
 
 void sendPeriodicUpdate() {
-  StaticJsonBuffer<256> jsonBuffer;
+  StaticJsonDocument<256> jsonDoc;
 
-  JsonObject& root = jsonBuffer.createObject();
-  root["temperature"] = climateSensor.getTemperature();
-  root["humidity"] = climateSensor.getHumidity();
-  root["light"] = lightSensor.getLightReading();
+  jsonDoc["temperature"] = climateSensor.getTemperature();
+  jsonDoc["humidity"] = climateSensor.getHumidity();
+  jsonDoc["light"] = lightSensor.getLightReading();
 
   char payload[256];
-  root.printTo(payload, sizeof(payload));
+  serializeJson(jsonDoc, payload);
 
   char topic[128];
   strcpy(topic, "climate/");
-  strcat(topic, Configurator::Instance()->getConfigValue(MQTT_TOPIC));
+  strcat(topic, Configurator::Instance()->getConfigValue(DEVICE_NAME));
 
-  root.prettyPrintTo(Serial);
+  serializeJson(jsonDoc, Serial);
   mqttClient.publish(topic, payload);
 }
 
@@ -50,20 +49,17 @@ boolean sendMotionUpdate() {
   if (motionStatus == curMotionStatus)
     return false;
 
-  StaticJsonBuffer<128> jsonBuffer;
+  StaticJsonDocument<256> jsonDoc;
+  jsonDoc["motion"] = curMotionStatus;
 
-  JsonObject& root = jsonBuffer.createObject();
-  root["motion"] = curMotionStatus;
-
-  char payload[128];
-  root.printTo(payload, sizeof(payload));
-
-  root.prettyPrintTo(Serial);
+  char payload[256];
+  serializeJson(jsonDoc, payload);
 
   char topic[128];
   strcpy(topic, "motion/");
-  strcat(topic, Configurator::Instance()->getConfigValue(MQTT_TOPIC));
+  strcat(topic, Configurator::Instance()->getConfigValue(DEVICE_NAME));
 
+  serializeJson(jsonDoc, Serial);
   mqttClient.publish(topic, payload);
 
   motionStatus = curMotionStatus;
@@ -111,15 +107,15 @@ void setup()
   // Configurator::Instance()->reset(); // for testing configurator
 
   String defaultClientId = "ESP-" + String(ESP.getChipId());
-  String defaultTopic = "climate/ESP-" + String(ESP.getChipId());
+  String defaultTopic = "ESP-" + String(ESP.getChipId());
   Serial.println("My name is " + defaultClientId);
 
+  Configurator::Instance()->addConfigOption(DEVICE_NAME, "Device Name", defaultTopic.c_str(), 40);
   Configurator::Instance()->addConfigOption(MQTT_SERVER, "MQTT server", "", 40);
   Configurator::Instance()->addConfigOption(MQTT_PORT, "MQTT port", "1883", 10);
   Configurator::Instance()->addConfigOption(MQTT_CLIENT_ID, "MQTT Client ID", defaultClientId.c_str(), 20);
   Configurator::Instance()->addConfigOption(MQTT_USERNAME, "MQTT Username", "", 20);
   Configurator::Instance()->addConfigOption(MQTT_PASSWORD, "MQTT Password", "", 40);
-  Configurator::Instance()->addConfigOption(MQTT_TOPIC, "MQTT Topic", defaultTopic.c_str(), 40);
   Configurator::Instance()->addConfigOption(CORE_LOOP_DELAY, "Core Loop Delay", "60000", 6);
 
   Configurator::Instance()->setup(CONFIG_RESET_PIN);

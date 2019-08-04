@@ -162,26 +162,27 @@ void Configurator::readConfigFile() {
   }
 
   Serial.println("opened config file");
+  Serial.println("");
   size_t size = configFile.size();
   // Allocate a buffer to store contents of the file.
   std::unique_ptr<char[]> buf(new char[size]);
 
   configFile.readBytes(buf.get(), size);
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.parseObject(buf.get());
-  json.printTo(Serial);
-  Serial.println("");
+  StaticJsonDocument<1024> jsonDoc;
+  DeserializationError error = deserializeJson(jsonDoc, buf.get());
+  JsonObject json = jsonDoc.as<JsonObject>();
 
-  if (json.success()) {
+  serializeJson(json, Serial);
+
+  if (!error) {
     Serial.println("parsed json");
 
     clearConfigOptions();
 
-    JsonObject::iterator iter;
-    for (iter=json.begin(); iter != json.end(); ++iter) {
+    for(JsonPair kv : json) {
       ConfigOption* option = new ConfigOption();
-      option->id = String(iter->key);
-      option->value = String(iter->value.as<char*>());
+      option->id = String(kv.key().c_str());
+      option->value = String(kv.value().as<char*>());
 
       configOptions.push_back(option);
       Serial.println("updated config option: " + option->id + " : " + option->value);
@@ -196,8 +197,8 @@ void Configurator::readConfigFile() {
 void Configurator::writeConfigFile() {
   Serial.println("writing config");
 
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
+  StaticJsonDocument<1024> jsonDocument;
+  JsonObject json = jsonDocument.to<JsonObject>();
 
   SimpleList<WiFiManagerParameter*>::iterator iter; // TODO: iterate over values
   WiFiManagerParameter* param;
@@ -210,12 +211,12 @@ void Configurator::writeConfigFile() {
   File configFile = SPIFFS.open("/config.json", "w");
 
   if (configFile) {
-    json.printTo(configFile);
+    serializeJson(json, configFile);
   } else {
     Serial.println("failed to open config file for writing");
   }
 
-  json.printTo(Serial);
+  serializeJson(json, Serial);
   Serial.println("");
   configFile.close();
 }
